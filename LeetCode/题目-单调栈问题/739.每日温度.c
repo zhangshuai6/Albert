@@ -110,7 +110,6 @@ void StackDestroy(Stack *stack)
  * Note: The returned array must be malloced, assume caller calls free().
  */
 int* dailyTemperatures(int* T, int TSize, int* returnSize){
-/* 实现 1 */
     int *retArray = NULL;
     int i;
     Stack *stack = NULL;
@@ -125,13 +124,24 @@ int* dailyTemperatures(int* T, int TSize, int* returnSize){
         return NULL;
     }
 
-    /* 单调栈处理 */
+#if 0
+/* 实现 1 反向 单调递减栈 */
     for (i = (TSize - 1); i >= 0; i--) {
         while ((!StackEmpty(stack)) && (T[StackTop(stack)] <= T[i])) {
             StackPop(stack);
         }
 
         retArray[i] = (StackEmpty(stack) == 1) ? 0 : (StackTop(stack) - i);
+        StackPush(stack, i);
+    }
+#endif
+/* 实现 2 正向 单调递减栈 */
+    for (i = 0; i < TSize; i++) {
+        while ((!StackEmpty(stack)) && (T[StackTop(stack)] < T[i])) {
+            retArray[StackTop(stack)] = i - StackTop(stack);
+            StackPop(stack);
+        }
+
         StackPush(stack, i);
     }
 
