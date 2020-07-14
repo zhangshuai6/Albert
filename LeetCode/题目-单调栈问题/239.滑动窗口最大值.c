@@ -33,139 +33,157 @@ typedef struct Node_ {
     struct Node_ *prev;
 } Node;
 
-typedef struct Stack_ {
+typedef struct Queue_ {
     int num;
-    Node *top;
-    Node *bottom;
-} Stack;
+    Node *rear;
+    Node *front;
+} Queue;
 
-Stack* StackCreate()
+Queue* QueueCreate()
 {
-    Stack *stack = NULL;
+    Queue *queue = NULL;
 
-    stack = (Stack*)calloc(1, sizeof(Stack));
-    CHECK_NULL_RETURN_NULL(stack);
+    queue = (Queue*)calloc(1, sizeof(Queue));
+    if (queue == NULL) {
+        return NULL;
+    }
 
-    return stack;
+    return queue;
 }
 
-void StackPush(Stack *stack, int val)
+void EnQueue(Queue *queue, int val)
 {
     Node *node = NULL;
 
-    CHECK_NULL_RETURN_VOID(stack);
+    if (queue == NULL) {
+        return;
+    }
 
     node = (Node*)malloc(sizeof(Node));
-    CHECK_NULL_RETURN_VOID(node);
+    if (node == NULL) {
+        return;
+    }
 
     node->val = val;
     node->next = NULL;
     node->prev = NULL;
 
-    if (stack->num == 0) {
-        stack->top = node;
-        stack->bottom = node;
+    if (queue->num == 0) {
+        queue->rear = node;
+        queue->front = node;
     } else {
-        node->next = stack->top;
-        stack->top->prev = node;
-        stack->top = node;
+        node->next = queue->rear;
+        queue->rear->prev = node;
+        queue->rear = node;
     }
 
-    (stack->num)++;
+    (queue->num)++;
 
     return;
 }
 
-void StackPop(Stack *stack)
+void DeQueueRear(Queue *queue)
 {
     Node *node = NULL;
 
-    CHECK_NULL_RETURN_VOID(stack);
-    if (stack->num == 0) {
+    if (queue == NULL) {
         return;
     }
 
-    node = stack->top;
-    stack->top = node->next;
-
-    if (stack->num != 1) {
-        stack->top->prev = NULL;
-    } else {
-        stack->bottom = NULL;
+    if (queue->num == 0) {
+        return;
     }
 
-    (stack->num)--;
+    node = queue->rear;
+    queue->rear = node->next;
+
+    if (queue->num != 1) {
+        queue->rear->prev = NULL;
+    } else {
+        queue->front = NULL;
+    }
+
+    (queue->num)--;
 
     free(node);
 
     return;
 }
 
-void StackPopBottom(Stack *stack)
+void DeQueueFront(Queue *queue)
 {
     Node *node = NULL;
 
-    CHECK_NULL_RETURN_VOID(stack);
-    if (stack->num == 0) {
+    if (queue == NULL) {
         return;
     }
 
-    node = stack->bottom;
-
-    if (stack->num != 1) {
-        stack->bottom->prev->next = NULL;
-        stack->bottom = stack->bottom->prev;
-    } else {
-        stack->bottom = NULL;
-        stack->top = NULL;
+    if (queue->num == 0) {
+        return;
     }
 
-    (stack->num)--;
+    node = queue->front;
+
+    if (queue->num != 1) {
+        queue->front->prev->next = NULL;
+        queue->front = queue->front->prev;
+    } else {
+        queue->front = NULL;
+        queue->rear = NULL;
+    }
+
+    (queue->num)--;
 
     free(node);
 
     return;
 }
 
-int StackTop(Stack *stack)
+int QueueGetRear(Queue *queue)
 {
-    CHECK_NULL_RETURN_ZERO(stack)
-
-    if (stack->num == 0) {
+    if (queue == NULL) {
         return 0;
     }
 
-    return stack->top->val;
-}
-
-int StackBottom(Stack *stack)
-{
-    CHECK_NULL_RETURN_ZERO(stack)
-
-    if (stack->num == 0) {
+    if (queue->num == 0) {
         return 0;
     }
 
-    return stack->bottom->val;
+    return queue->rear->val;
 }
 
-int StackEmpty(Stack *stack)
+int QueueGetFront(Queue *queue)
 {
-    return (stack->num == 0) ? 1 : 0;
+    if (queue == NULL) {
+        return 0;
+    }
+
+    if (queue->num == 0) {
+        return 0;
+    }
+
+    return queue->front->val;
 }
 
-void StackDestroy(Stack *stack)
+int QueueEmpty(Queue *queue)
+{
+    return (queue->num == 0) ? 1 : 0;
+}
+
+void QueueDestroy(Queue *queue)
 {   
     int num;
 
-    CHECK_NULL_RETURN_VOID(stack);
-
-    num = stack->num;
-    while (num--) {
-        StackPop(stack);
+    if (queue == NULL) {
+        return;
     }
 
-    free(stack);
+    num = queue->num;
+    while (num--) {
+        DeQueueRear(queue);
+    }
+
+    free(queue);
 
     return;
 }
@@ -178,35 +196,34 @@ int* maxSlidingWindow(int* nums, int numsSize, int k, int* returnSize){
     int i;
     int j = 0;
     int *retArray = NULL;
-    Stack *stack = NULL;
+    Queue *queue = NULL;
 
     retSize = numsSize - k + 1;
 
     retArray = (int*)malloc(sizeof(int) * retSize);
     CHECK_NULL_RETURN_NULL(retArray);
 
-    stack = StackCreate();
-    if (stack == NULL) {
-        free(stack);
+    queue = QueueCreate();
+    if (queue == NULL) {
         return NULL;
     }
 
     for (i = 0; i < numsSize; i++) {
-        while ((!StackEmpty(stack)) && (nums[StackTop(stack)]) < nums[i]) {
-            StackPop(stack);
+        while ((!QueueEmpty(queue)) && (nums[QueueGetRear(queue)]) < nums[i]) {
+            DeQueueRear(queue);
         }
 
-        StackPush(stack, i);
+        EnQueue(queue, i);
         if ((i + 1) >= k) {
-            retArray[j++] = nums[StackBottom(stack)];
+            retArray[j++] = nums[QueueGetFront(queue)];
         }
 
-        if ((i - StackBottom(stack) + 1) >= k) {
-            StackPopBottom(stack);
+        if ((i - QueueGetFront(queue) + 1) >= k) {
+            DeQueueFront(queue);
         }
     }
 
-    StackDestroy(stack);
+    QueueDestroy(queue);
 
     *returnSize = retSize;
     return retArray;
